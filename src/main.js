@@ -52,7 +52,11 @@ function Game_Load()
         // Pro-tip: This sin func. is totally hand-made and doesn't actually mean anything; I kept fudging the numbers
         // until we had a cool looking scene!
         var x = i * pointSpread;
-        var y = gWindowHeight - pointSpread * 2 + 10.0 * Math.sin(offset + i) + 10.0 * Math.sin(offset + i * 100) + 5.0 * Math.cos( offset + parseFloat(i) / 100.0) + 5.0 * Math.cos( offset + 100.0 * Math.random() );
+        var y = gWindowHeight - pointSpread * 2 +
+           10.0 * Math.sin(offset + i) +
+           10.0 * Math.sin(offset + i * 100) +
+           5.0 * Math.cos( offset + parseFloat(i) / 100.0) +
+           5.0 * Math.cos( offset + 100.0 * Math.random() );
         gWorldPolygon.push([x, y]);
     }
     
