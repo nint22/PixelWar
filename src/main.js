@@ -101,28 +101,23 @@ function Game_Load()
         _pos: [0, 0],
         _vel: [0, 0],
         _physics: false,
+        _sprite: null,
 
         initialize: function(pos, vel, physics) {
             _pos = pos;
             _vel = vel;
             _physics = physics;
 
-            this.bind("EnterFrame",function(){
-                this.draw();
-            })
+            _sprite = Crafty.e("2D, Canvas, Color").color( gColorPalette[3] ).attr({x:_pos[0], y:_pos[1], w: 8, h: 8});
 
             return this;
         },
 
         update: function() {
             _pos = add2d(_pos, _vel);
+            _sprite.attr({x:_pos[0], y:_pos[1]});
             //fuck physics
         },
-
-        draw: function() {
-            Crafty.e("2D, Canvas, Color").color( gColorPalette[3] ).attr({x:_pos[0], y:_pos[1], w: 8, h: 8});
-
-        }
     });
 
     // Define how the world is drawn..
