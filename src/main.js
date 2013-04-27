@@ -7,11 +7,11 @@ var gColorPalette = ['#EFFFDE', '#ADD794', '#529273', '#183442'];
 
 /*** Friendly Geometry ***/
 
-gFriendlyUnit0: {
-    price = 10,
-    stats = {minRange:10, accuracy:0.4, fireRate:0.5},
-    size = {width:2, height:4},
-    geo = [
+var gFriendlyUnit0 = {
+    price: 10,
+    stats: {minRange:10, accuracy:0.4, fireRate:0.5},
+    size: {width:2, height:4},
+    geo: [
         [1,0],
         [1,2],
         [1,0],
@@ -19,11 +19,11 @@ gFriendlyUnit0: {
     ]
 };
 
-gFriendlyUnit1: {
-    price = 80,
-    stats = {minRange:80, accuracy:0.1, fireRate:0.2},
-    size = {width:5, height:3},
-    geo = [
+var gFriendlyUnit1 = {
+    price: 80,
+    stats: {minRange:80, accuracy:0.1, fireRate:0.2},
+    size: {width:5, height:3},
+    geo: [
         [0,1,0,0,0],
         [1,1,1,1,0],
         [1,1,0,1,1],
@@ -62,10 +62,31 @@ function Game_Load()
     
     // Define how we are drawn...
     Crafty.c("GameUnit", {
-        _unit: null,
+        _unit: {},
         _pos: [0, 0],
         
-        init: function(){
+        initialize: function(unit, pos){
+            this._pos = pos;
+            
+            // Deep copy unit
+            this._unit.price = unit.price;
+            this._unit.stats = {minRange:unit.stats.minRange, accuracy:unit.stats.accuracy, fireRate:unit.stats.fireRate};
+            this._unit.size = {width:unit.size.width, height:unit.size.height};
+            this._unit.geo = unit.geo;
+            
+            // Unit component-sprite sizes
+            var spriteWidth = 8;
+            var spriteHeight = 8;
+            
+            // Generate all relavent sprites
+            for(var y = 0; y < this._unit.size.height; y++)
+            for(var x = 0; x < this._unit.size.width; x++)
+            {
+                var colorIndex = this._unit.geo[y][x];
+                Crafty.e("2D, Canvas, Color").color( gColorPalette[colorIndex] ).attr({x: pos[0] + x * spriteWidth, y: pos[1] + y * spriteHeight, w: spriteWidth, h: spriteHeight});
+            }
+            
+            // Register for future updates
             this.bind("EnterFrame",function(){
                 this.draw();
             })
@@ -172,6 +193,9 @@ function GameScene_Init()
 {
     // Allocate background
     GameScene_GameBackground = Crafty.e('GameBackground').initialize(gWorldPolygon);
+    
+    // Create a single game unit for fun...
+    Crafty.e('GameUnit').initialize(gFriendlyUnit1, [20, 50]);
 }
 
 function GameScene_Update()
