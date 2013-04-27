@@ -7,9 +7,13 @@ var gColorPalette = ['#EFFFDE', '#ADD794', '#529273', '#183442'];
 
 /*** Friendly Geometry ***/
 
+// Unit component-sprite sizes
+var gSpriteWidth = 8;
+var gSpriteHeight = 8;
+
 var gFriendlyUnit0 = {
     price: 10,
-    stats: {minRange:10, accuracy:0.4, fireRate:0.5},
+    stats: {speed: 1, minRange:10, accuracy:0.4, fireRate:0.5},
     size: {width:2, height:4},
     geo: [
         [1,0],
@@ -21,12 +25,13 @@ var gFriendlyUnit0 = {
 
 var gFriendlyUnit1 = {
     price: 80,
-    stats: {minRange:80, accuracy:0.1, fireRate:0.2},
-    size: {width:5, height:3},
+    stats: {speed: 0.3, minRange:80, accuracy:0.1, fireRate:0.2},
+    size: {width:5, height:4},
     geo: [
-        [0,1,0,0,0],
-        [1,1,1,1,0],
-        [1,1,0,1,1],
+        [0,0,0,0,1],
+        [0,1,1,1,0],
+        [1,1,1,1,1],
+        [2,2,0,2,2],
     ]
 };
 
@@ -64,36 +69,73 @@ function Game_Load()
     Crafty.c("GameUnit", {
         _unit: {},
         _pos: [0, 0],
+        _sprites: [],
+        
+        init: function(){
+            
+            // Register for future updates
+            this.bind("EnterFrame",function(e){
+                
+                // Which edge are we on?
+                var edgeIndex = -1;
+                for(var i = 0; i < gWorldPolygon.length - 1; i++)
+                {
+                    if( this._pos[0] > gWorldPolygon[i][0] )
+                    {
+                        edgeIndex = i;
+                        break;
+                    }
+                }
+                
+                // Ignore if out of bounds
+                if( edgeIndex < 0 )
+                    return;
+                
+                // Compute intersection point
+                var pt0 = gWorldPolygon[edgeIndex + 0];
+                var pt1 = gWorldPolygon[edgeIndex + 1];
+                var delta = (pt1[1] - pt0[1]) / (pt1[0] - pt0[0]);
+                var b = pt0[1] - delta * pt0[0];
+                
+                // Update position
+                var pos = [this._pos[0], delta * this._pos[0] + b];
+                this.moveTo(pos);
+            });
+        },
         
         initialize: function(unit, pos){
             this._pos = pos;
             
             // Deep copy unit
             this._unit.price = unit.price;
-            this._unit.stats = {minRange:unit.stats.minRange, accuracy:unit.stats.accuracy, fireRate:unit.stats.fireRate};
+            this._unit.stats = {speed:unit.stats.speed, minRange:unit.stats.minRange, accuracy:unit.stats.accuracy, fireRate:unit.stats.fireRate};
             this._unit.size = {width:unit.size.width, height:unit.size.height};
             this._unit.geo = unit.geo;
             
-            // Unit component-sprite sizes
-            var spriteWidth = 8;
-            var spriteHeight = 8;
+            // Generate all relavent sprites
+            for(var y = 0; y < this._unit.size.height; y++)
+            {
+                this._sprites.push( new Array(this._unit.size.width) );
+                for(var x = 0; x < this._unit.size.width; x++)
+                {
+                    // Retained for future movement
+                    var colorIndex = this._unit.geo[y][x];
+                    this._sprites[y][x] = Crafty.e("2D, Canvas, Color").color( gColorPalette[colorIndex] ).attr({x: pos[0] + x * gSpriteWidth, y: pos[1] + y * gSpriteHeight, w: gSpriteWidth, h: gSpriteHeight});
+                }
+            }
+        },
+        
+        moveTo: function(pos) {
+            this._pos = pos;
             
             // Generate all relavent sprites
             for(var y = 0; y < this._unit.size.height; y++)
             for(var x = 0; x < this._unit.size.width; x++)
             {
+                // Retained for future movement
                 var colorIndex = this._unit.geo[y][x];
-                Crafty.e("2D, Canvas, Color").color( gColorPalette[colorIndex] ).attr({x: pos[0] + x * spriteWidth, y: pos[1] + y * spriteHeight, w: spriteWidth, h: spriteHeight});
+                this._sprites[y][x].attr({x: pos[0] + x * gSpriteWidth, y: pos[1] + y * gSpriteHeight, w: gSpriteWidth, h: gSpriteHeight});
             }
-            
-            // Register for future updates
-            this.bind("EnterFrame",function(){
-                this.draw();
-            })
-        },
-        
-        draw: function(){
-            
         }
     });
     
