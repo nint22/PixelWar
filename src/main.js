@@ -97,7 +97,9 @@ function Game_Load()
         }
     });
 
+    var gAccel = [0, 10];
     Crafty.c("SampleProjectile", {
+        _mass: 100,
         _pos: [0, 0],
         _vel: [0, 0],
         _physics: false,
@@ -113,10 +115,14 @@ function Game_Load()
             return this;
         },
 
-        update: function() {
-            _pos = add2d(_pos, _vel);
-            _sprite.attr({x:_pos[0], y:_pos[1]});
+        update: function(dt) {
+            _pos = add2d(_pos, scale2d(_vel, dt));
+            if(_physics) {
+                _vel = add2d(_vel, scale2d(gAccel, dt));
+
+            }
             //fuck physics
+            _sprite.attr({x:_pos[0], y:_pos[1]});
         },
     });
 
@@ -221,13 +227,26 @@ function GameScene_Init()
 
     // Create a single game unit for fun...
     Crafty.e('GameUnit').initialize(gFriendlyUnit1, [20, 50]);
-    gProjectile = Crafty.e('SampleProjectile').initialize([100, 100], [10, 0], false);
+    gProjectile = Crafty.e('SampleProjectile').initialize([100, 100], [100, 0], true);
 }
 
+var gLastFrame = null;
 function GameScene_Update()
 {
+    var dt;
+    if(!gLastFrame) {
+        dt = 0;
+        gLastFrame = Date.now();
+    }
+    else {
+        var now = Date.now();
+        dt = now - gLastFrame;
+        gLastFrame = now;
+    }
+    dt /= 1000;
+
     if(gProjectile) {
-        gProjectile.update();
+        gProjectile.update(dt);
     }
 }
 
