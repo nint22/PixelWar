@@ -193,7 +193,7 @@ function Game_Load()
         update: function() {
             var currentSize = this.w;
             if(currentSize > 0) {
-                this.attr({w: currentSize-1, h: currentSize-1});
+                this.attr({w: currentSize - this._decay, h: currentSize - this._decay});
             } else {
                 this.destroy();
             }
@@ -232,7 +232,7 @@ function Game_Load()
             if(this._physics) {
                 this._vel = add2d(this._vel, scale2d(gAccel, dt));
             }
-            Crafty.e('Particle').createParticle(this._pos, [5, 5], 0.2);
+            Crafty.e('Particle').createParticle(this._pos, [5, 5], 0.1);
             this.attr({x:this._pos[0], y:this._pos[1]});
         },
     });
