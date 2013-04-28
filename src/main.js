@@ -274,7 +274,6 @@ function Game_Load()
 
             this.collision();
             this.onHit('Ground', function() {
-                console.log('collision!');
                 Crafty.e('Explosion').createExplosion(this._pos, 10);
                 this.destroy();
             });
@@ -343,9 +342,14 @@ function Game_Load()
                 {
                     // No need to retain (draw left and right)
                     var spriteHeight = (y == 2) ? 300.0: stepHeight;
-                    Crafty.e("2D, Canvas, Color, Ground").color( gColorPalette[y + 1] ).attr({x: pt[0] - leftLength, y: pt[1] + y * stepHeight + leftHeight, w: leftLength, h: spriteHeight});
-                    Crafty.e("2D, Canvas, Color, Ground").color( gColorPalette[y + 1] ).attr({x: pt[0], y: pt[1] + y * stepHeight + rightHeight, w: rightLength, h: spriteHeight});
-                    
+                    var left = Crafty.e("2D, Canvas, Color").color( gColorPalette[y + 1] ).attr({x: pt[0] - leftLength, y: pt[1] + y * stepHeight + leftHeight, w: leftLength, h: spriteHeight});
+                    var right = Crafty.e("2D, Canvas, Color").color( gColorPalette[y + 1] ).attr({x: pt[0], y: pt[1] + y * stepHeight + rightHeight, w: rightLength, h: spriteHeight});
+
+                    if(y === 0) {
+                        left.addComponent("Ground");
+                        right.addComponent("Ground");
+                    }
+
                     // Debugging:
                     //Crafty.e("2D, Canvas, Color").color("red").attr({x: pt[0], y: pt[1], w: 4, h: 4});
                 }
