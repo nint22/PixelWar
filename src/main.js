@@ -3,7 +3,12 @@
 
 var gWindowWidth = 1000;
 var gWindowHeight = 500;
+
 var gColorPalette = ['#EFFFDE', '#ADD794', '#529273', '#183442'];
+var gDeltaCount = 30;
+
+// Time ellapsed over the last frame
+var gFrameTime = 0.0;
 
 /*** User Input ***/
 
@@ -19,7 +24,9 @@ var gWorldPolygon = []; //[[0, 350], [10, 400], [50, 410], [100, 405], [200, 380
 
 /*** Player Properties ***/
 
-gPlayerBank: 0;
+var gPlayerBank = 0;
+var gKillCount = 0;     // Number of enemies killed
+var gKilledCount = 0;   // Number of friendlies killed
 
 /*** CraftyJS Support Code ***/
 
@@ -48,7 +55,17 @@ function Game_Load()
         init: function(){
             // Register for future updates
             this.bind("EnterFrame",function(e){
+            
+                // Move forward over time
                 this.moveTo( this._pos[0] + this._unit.stats.speed );
+                
+                // Attempt to fire if possible
+                this._weaponReload += gFrameTime;
+                if( this._weaponReload > this._unit.stats.speed )
+                {
+                    this._weaponReload = 0.0;
+                    Crafty.e('SampleProjectile').createProjectile(this._pos, [100, -20], true);
+                }
             });
         },
         
@@ -58,6 +75,15 @@ function Game_Load()
             this._pos = [0, 0];
             this._sprites = [];
             this._pos = pos;
+            
+            // Weapon reaload timer
+            this._weaponReload = 0;
+            
+            // Averge for use with movement
+            this._deltaIndex = 0;
+            this._deltas = new Array(gDeltaCount);
+            for(var i = 0; i < gDeltaCount; i++)
+                this._deltas[i] = 0.0;
             
             // Deep copy unit
             this._unit.price = unit.price;
@@ -100,7 +126,7 @@ function Game_Load()
             if( edgeIndex < 0 )
                 return;
             
-            // Compute intersection point
+            // Compute intersection point on this edge
             var pt0 = gWorldPolygon[edgeIndex + 0];
             var pt1 = gWorldPolygon[edgeIndex + 1];
             var delta = (pt1[1] - pt0[1]) / (pt1[0] - pt0[0]);
@@ -110,6 +136,16 @@ function Game_Load()
             var pos = [this._pos[0], delta * this._pos[0] + b];
             pos[1] -= this._unit.size.height * gSpriteHeight;
             this._pos = pos;
+            
+            // Add delta to our moving average
+            this._deltaIndex = (this._deltaIndex + 1) % gDeltaCount;
+            this._deltas[this._deltaIndex] = delta;
+            
+            // Sum & average
+            delta = 0;
+            for(var i = 0; i < gDeltaCount; i++)
+                delta += this._deltas[i];
+            delta /= parseFloat(gDeltaCount);
             
             // Generate all relavent sprites
             for(var y = 0; y < this._unit.size.height; y++)
@@ -217,14 +253,19 @@ function Game_Load()
         _pos: null,
         _vel: null,
         _physics: null,
+        _spawnTime: null,
+        __spawnTimeMax: null,
         init: function() {
             this.addComponent("2D, Canvas, Color, Collision");
+            this.bind("EnterFrame", function(e){ this.update(); });
         },
         createProjectile: function(pos, vel, physics) {
             this._pos = pos;
             this._vel = vel;
             this._physics = physics;
-
+            this._spawnTime = 0.0;
+            this._spawnTimeMax = 0.2;
+            
             this.attr({x: this._pos[0],
                        y: this._pos[1],
                        w: 8,
@@ -240,13 +281,20 @@ function Game_Load()
 
             return this;
         },
-        update: function(dt) {
+        update: function() {
+            var dt = gFrameTime;
+            this._spawnTime += dt;
+            
             this._pos = add2d(this._pos, scale2d(this._vel, dt));
-            if(this._physics) {
+            if(this._physics)
                 this._vel = add2d(this._vel, scale2d(gAccel, dt));
-            }
-            Crafty.e('Particle').createParticle(this._pos, [5, 5], 0.1);
             this.attr({x:this._pos[0], y:this._pos[1]});
+            
+            if(this._spawnTime > this._spawnTimeMax)
+            {
+                this._spawnTime = 0.0;
+                Crafty.e('Particle').createParticle(this._pos, [5, 5], 0.1);
+            }
         },
     });
 
@@ -339,26 +387,14 @@ function Game_Load()
 
 /*** Main game scene ***/
 
-var GameScene_GameBackground = null;
-
-var gProjectile = null;
-
 function GameScene_Init()
 {
     // Allocate background and both HQs
     Crafty.e('Scenery').initialize(sceneryHQ0, [50, 225]);
-    Crafty.e('Scenery').initialize(sceneryHQ1, [1000, 250]);
-    GameScene_GameBackground = Crafty.e('GameBackground').initialize(gWorldPolygon);
+    Crafty.e('Scenery').initialize(sceneryHQ1, [2800, 225]);
+    Crafty.e('GameBackground').initialize(gWorldPolygon);
     
-    // Create a single game unit for fun...
-    Crafty.e('GameUnit').initialize(gFriendlyUnit1, [20, 50]);
-    Crafty.e('GameUnit').initialize(gFriendlyUnit0, [50, 80]);
-    Crafty.e('GameUnit').initialize(gFriendlyUnit0, [40, 80]);
-    Crafty.e('GameUnit').initialize(gFriendlyUnit0, [30, 80]);
-    
-    gProjectile = Crafty.e('SampleProjectile').createProjectile([100, 100], [100, 0], true);
-    
-    // Last visual layer
+    // Important to leave the UI last
     GameScene_InitUI();
 }
 
@@ -373,9 +409,10 @@ function GameScene_InitUI()
         // Button
         Crafty.e("2D, Canvas, Color, Mouse")
         .color(gColorPalette[1])
-        .attr({ x: px, y: py, w: gButtonWidth, h: gButtonHeight, px: px })
+        .attr({ x: px, y: py, w: gButtonWidth, h: gButtonHeight, px: px, unitIndex: i })
         .bind('MouseOver', function() { this.color(gColorPalette[2]) })
         .bind('MouseOut', function() { this.color(gColorPalette[1]) })
+        .bind('Click', function() { Crafty.e('GameUnit').initialize(gFriendlyUnits[this.unitIndex], [80, 80]); })
         .areaMap([0,0], [gButtonWidth,0], [gButtonWidth,gButtonHeight], [0,gButtonHeight])
         .bind('EnterFrame', function() {
             this.x = -Crafty.viewport.x + this.px;
@@ -391,26 +428,71 @@ function GameScene_InitUI()
             this.x = -Crafty.viewport.x + this.px;
         });
     }
+    
+    // Draw cash flow and unit counts
+    Crafty.e("2D, Canvas, Color")
+    .color(gColorPalette[1])
+    .attr({ x:5, y:5, w: 100, h: 50 })
+    .bind('EnterFrame', function() {
+        this.x = -Crafty.viewport.x + 5;
+    });
+    
+    Crafty.e("2D, DOM, Text")
+    .attr({ x:5, y:5, w: 100, h: 25 })
+    .text( "Cash:" )
+    .textColor(gColorPalette[3])
+    .bind('EnterFrame', function() {
+        this.x = -Crafty.viewport.x + 5;
+    });
+    
+    Crafty.e("2D, DOM, Text")
+    .attr({ x:5, y:25, w: 100, h: 25 })
+    .text( "$0" )
+    .textColor(gColorPalette[3])
+    .bind('EnterFrame', function() {
+        this.text = "$" + gPlayerBank;
+        this.x = -Crafty.viewport.x + 5;
+    });
+    
+    // Draw kill count
+    Crafty.e("2D, Canvas, Color")
+    .color(gColorPalette[1])
+    .attr({ x:5, y:60, w: 100, h: 50 })
+    .bind('EnterFrame', function() {
+        this.x = -Crafty.viewport.x + 5;
+    });
+    
+    Crafty.e("2D, DOM, Text")
+    .attr({ x:5, y:60, w: 100, h: 25 })
+    .text( "Killed / Dead:" )
+    .textColor(gColorPalette[3])
+    .bind('EnterFrame', function() {
+        this.x = -Crafty.viewport.x + 5;
+    });
+    
+    Crafty.e("2D, DOM, Text")
+    .attr({ x:5, y:85, w: 100, h: 25 })
+    .text( "0 / 0" )
+    .textColor(gColorPalette[3])
+    .bind('EnterFrame', function() {
+        this.text = gKillCount + " / " + gKilledCount;
+        this.x = -Crafty.viewport.x + 5;
+    });
+    
 }
 
 var gLastFrame = null;
 function GameScene_Update()
 {
-    var dt;
     if(!gLastFrame) {
-        dt = 0;
         gLastFrame = Date.now();
     }
     else {
         var now = Date.now();
-        dt = now - gLastFrame;
+        gFrameTime = now - gLastFrame;
         gLastFrame = now;
     }
-    dt /= 1000;
-
-    if(gProjectile) {
-        gProjectile.update(dt);
-    }
+    gFrameTime /= 1000;
 }
 
 function GameScene_Uninit()

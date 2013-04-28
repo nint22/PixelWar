@@ -20,6 +20,18 @@ var gFriendlyUnit0 = {
 };
 
 var gFriendlyUnit1 = {
+    price: 30,
+    stats: {speed: 0.6, minRange:12, accuracy:0.2, fireRate:0.3},
+    size: {width:3, height:4},
+    geo: [
+        [0,1,0],
+        [2,2,3],
+        [2,2,0],
+        [0,2,0],
+    ]
+};
+
+var gFriendlyUnit2 = {
     price: 80,
     stats: {speed: 0.25, minRange:80, accuracy:0.1, fireRate:0.2},
     size: {width:5, height:4},
@@ -30,6 +42,74 @@ var gFriendlyUnit1 = {
         [2,2,0,2,2],
     ]
 };
+
+var gFriendlyUnit3 = {
+    price: 300,
+    stats: {speed: 2.1, minRange:400, accuracy:0.5, fireRate:2},
+    size: {width:11, height:6},
+    geo: [
+        [0,0,0,0,3,2,3,2,3,2,3],
+        [2,3,2,0,0,0,0,2,0,0,0],
+        [0,2,0,0,0,2,2,2,2,2,0],
+        [0,0,2,2,2,1,1,1,2,2,2],
+        [0,0,0,2,2,1,1,1,1,1,2],
+        [0,0,0,0,0,2,2,2,2,2,0],
+    ]
+};
+
+var gEnemyUnit0 = {
+    price: 10,
+    stats: {speed: -0.8, minRange:8, accuracy:0.3, fireRate:0.5},
+    size: {width:2, height:4},
+    geo: [
+        [0,2],
+        [3,2],
+        [0,1],
+        [0,1]
+    ]
+};
+
+var gEnemyUnit1 = {
+    price: 30,
+    stats: {speed: -0.6, minRange:12, accuracy:0.2, fireRate:0.3},
+    size: {width:3, height:4},
+    geo: [
+        [0,1,0],
+        [2,1,1],
+        [0,1,1],
+        [0,1,1],
+    ]
+};
+
+var gEnemyUnit2 = {
+    price: 80,
+    stats: {speed: -0.2, minRange:75, accuracy:0.2, fireRate:0.1},
+    size: {width:5, height:4},
+    geo: [
+        [0,0,0,0,0],
+        [2,2,1,1,0],
+        [0,1,1,1,0],
+        [2,2,2,2,2],
+    ]
+};
+
+var gEnemyUnit3 = {
+    price: 300,
+    stats: {speed: -0.1, minRange:400, accuracy:0.5, fireRate:2},
+    size: {width:7, height:6},
+    geo: [
+        [3,2,3,2,3,2,3],
+        [0,0,0,1,0,0,0],
+        [0,2,2,1,2,2,0],
+        [2,0,0,0,0,0,2],
+        [2,0,0,0,0,0,2],
+        [0,2,2,2,2,2,0],
+    ]
+};
+
+// Arrays list
+var gFriendlyUnits = [ gFriendlyUnit0, gFriendlyUnit1, gFriendlyUnit2, gFriendlyUnit3 ];
+var gEnemyUnits = [ gEnemyUnit0, gEnemyUnit1, gEnemyUnit2, gEnemyUnit3 ];
 
 /*** Scenery ***/
 
