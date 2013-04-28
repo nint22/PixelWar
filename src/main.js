@@ -5,35 +5,12 @@ var gWindowWidth = 1000;
 var gWindowHeight = 500;
 var gColorPalette = ['#EFFFDE', '#ADD794', '#529273', '#183442'];
 
-/*** Friendly Geometry ***/
+/*** User Input ***/
 
-// Unit component-sprite sizes
-var gSpriteWidth = 8;
-var gSpriteHeight = 8;
-
-var gFriendlyUnit0 = {
-    price: 10,
-    stats: {speed: 1, minRange:10, accuracy:0.4, fireRate:0.5},
-    size: {width:2, height:4},
-    geo: [
-        [1,0],
-        [1,2],
-        [1,0],
-        [1,0]
-    ]
-};
-
-var gFriendlyUnit1 = {
-    price: 80,
-    stats: {speed: 0.25, minRange:80, accuracy:0.1, fireRate:0.2},
-    size: {width:5, height:4},
-    geo: [
-        [0,0,0,0,1],
-        [0,1,1,1,0],
-        [1,1,1,1,1],
-        [2,2,0,2,2],
-    ]
-};
+var gButtonWidth = 64;
+var gButtonHeight = 64;
+var gButtonCount = 4;
+var gButtonTexts = ["+ Marine", "+ Mech", "+ Tank", "+ Gunship"];
 
 /*** World Geometry ***/
 
@@ -57,7 +34,7 @@ function Game_Load()
         // Pro-tip: This sin func. is totally hand-made and doesn't actually mean anything; I kept fudging the numbers
         // until we had a cool looking scene!
         var x = i * pointSpread;
-        var y = gWindowHeight - pointSpread * 2 +
+        var y = gWindowHeight * 0.9 - pointSpread * 2 +
            10.0 * Math.sin(offset + i) +
            10.0 * Math.sin(offset + i * 100) +
            5.0 * Math.cos( offset + parseFloat(i) / 100.0) +
@@ -281,15 +258,15 @@ function Game_Load()
                 for(var y = 0; y < 3; y++)
                 {
                     // No need to retain (draw left and right)
-                    var spriteHeight = (y == 2) ? 100.0: stepHeight;
+                    var spriteHeight = (y == 2) ? 300.0: stepHeight;
                     Crafty.e("2D, Canvas, Color, Ground").color( gColorPalette[y + 1] ).attr({x: pt[0] - leftLength, y: pt[1] + y * stepHeight + leftHeight, w: leftLength, h: spriteHeight});
                     Crafty.e("2D, Canvas, Color, Ground").color( gColorPalette[y + 1] ).attr({x: pt[0], y: pt[1] + y * stepHeight + rightHeight, w: rightLength, h: spriteHeight});
-
+                    
                     // Debugging:
                     //Crafty.e("2D, Canvas, Color").color("red").attr({x: pt[0], y: pt[1], w: 4, h: 4});
                 }
             }
-
+            
             // Register for callback
             this.bind("EnterFrame",function(){
                 this.update();
@@ -344,6 +321,30 @@ function GameScene_Init()
     Crafty.e('GameUnit').initialize(gFriendlyUnit0, [30, 80]);
     
     gProjectile = Crafty.e('SampleProjectile').createProjectile([100, 100], [100, 0], true);
+    
+    // Last visual layer
+    GameScene_InitUI();
+}
+
+function GameScene_InitUI()
+{
+    // For each button
+    for(var i = 0; i < gButtonCount; i++)
+    {
+        var px = (gWindowWidth / gButtonCount) * i + (gWindowWidth / gButtonCount) / 2 - gButtonWidth / 2;
+        var py = gWindowHeight - gButtonHeight - 8;
+        
+        Crafty.e("2D, Canvas, Color, Mouse")
+        .color(gColorPalette[1])
+        .attr({ x: px, y: py, w: gButtonWidth, h: gButtonHeight, parent: Crafty.viewport })
+        .bind('MouseOver', function() { this.color(gColorPalette[2]) })
+        .bind('MouseOut', function() { this.color(gColorPalette[1]) })
+        .areaMap([0,0], [gButtonWidth,0], [gButtonWidth,gButtonHeight], [0,gButtonHeight])
+        .bind('EnterFrame', function() {
+            var px = (gWindowWidth / gButtonCount) * i + (gWindowWidth / gButtonCount) / 2 - gButtonWidth / 2;
+            this.x = -Crafty.viewport.x;
+        } );
+    }
 }
 
 var gLastFrame = null;
