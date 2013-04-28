@@ -243,7 +243,12 @@ function Game_Load()
             for(var i in this._debris) {
                 var pos = [this._debris[i].x, this._debris[i].y];
                 pos = add2d(pos, scale2d(this._debrisVectors[i], this._size/10));
-                this._debris[i].attr({x:pos[0], y:pos[1]});
+                if (this._debris[i].w > 0) {
+                    this._debris[i].attr({x:pos[0], y:pos[1]});
+                }
+                else {
+                    this.destroy();
+                }
             }
         }
     });
