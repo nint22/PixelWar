@@ -17,3 +17,11 @@ function magnitude2d(v) {
 function normalize2d(v) {
     return scale2d(v, 1/magnitude2d(v));
 }
+
+function rectanglePoints(pos, size) {
+    return [pos,
+            add2d(pos, [size[0], 0]),
+            add2d(pos, size),
+            add2d(pos, [0, size[1]])
+           ];
+}

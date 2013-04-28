@@ -99,30 +99,37 @@ function Game_Load()
 
     var gAccel = [0, 10];
     Crafty.c("SampleProjectile", {
-        _mass: 100,
-        _pos: [0, 0],
-        _vel: [0, 0],
-        _physics: false,
-        _sprite: null,
+        _pos: null,
+        _vel: null,
+        _physics: null,
+        init: function() {
+            this.addComponent("2D, Canvas, Color, Collision");
+        },
+        createProjectile: function(pos, vel, physics) {
+            this._pos = pos;
+            this._vel = vel;
+            this._physics = physics;
 
-        initialize: function(pos, vel, physics) {
-            _pos = pos;
-            _vel = vel;
-            _physics = physics;
+            this.attr({x: this._pos[0],
+                       y: this._pos[1],
+                       w: 8,
+                       h: 8});
+            this.color(gColorPalette[3]);
 
-            _sprite = Crafty.e("2D, Canvas, Color").color( gColorPalette[3] ).attr({x:_pos[0], y:_pos[1], w: 8, h: 8});
+            this.collision();
+            this.onHit('Ground', function() {
+                console.log('got here');
+                debugger;
+            });
 
             return this;
         },
-
         update: function(dt) {
-            _pos = add2d(_pos, scale2d(_vel, dt));
-            if(_physics) {
-                _vel = add2d(_vel, scale2d(gAccel, dt));
-
+            this._pos = add2d(this._pos, scale2d(this._vel, dt));
+            if(this._physics) {
+                this._vel = add2d(this._vel, scale2d(gAccel, dt));
             }
-            //fuck physics
-            _sprite.attr({x:_pos[0], y:_pos[1]});
+            this.attr({x:this._pos[0], y:this._pos[1]});
         },
     });
 
@@ -178,6 +185,7 @@ function Game_Load()
                     //Crafty.e("2D, Canvas, Color").color("red").attr({x: pt[0], y: pt[1], w: 4, h: 4});
                 }
             }
+            Crafty.e("2D, Collision").collision(this.points, [0, gWindowHeight], [gWindowWidth, gWindowHeight] );
 
             // Register for callback
             this.bind("EnterFrame",function(){
@@ -227,7 +235,7 @@ function GameScene_Init()
 
     // Create a single game unit for fun...
     Crafty.e('GameUnit').initialize(gFriendlyUnit1, [20, 50]);
-    gProjectile = Crafty.e('SampleProjectile').initialize([100, 100], [100, 0], true);
+    gProjectile = Crafty.e('SampleProjectile').createProjectile([100, 100], [100, 0], true);
 }
 
 var gLastFrame = null;
