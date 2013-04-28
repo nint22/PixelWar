@@ -254,7 +254,7 @@ function Game_Load()
         _vel: null,
         _physics: null,
         _spawnTime: null,
-        __spawnTimeMax: null,
+        _spawnTimeMax: null,
         init: function() {
             this.addComponent("2D, Canvas, Color, Collision");
             this.bind("EnterFrame", function(e){ this.update(); });
@@ -286,12 +286,12 @@ function Game_Load()
             this._spawnTime += dt;
             
             this._pos = add2d(this._pos, scale2d(this._vel, dt));
-            if(this._physics)
+            if(this._physics) {
                 this._vel = add2d(this._vel, scale2d(gAccel, dt));
+            }
             this.attr({x:this._pos[0], y:this._pos[1]});
             
-            if(this._spawnTime > this._spawnTimeMax)
-            {
+            if(this._spawnTime > this._spawnTimeMax) {
                 this._spawnTime = 0.0;
                 Crafty.e('Particle').createParticle(this._pos, [5, 5], 0.1);
             }
