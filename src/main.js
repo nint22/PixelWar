@@ -166,6 +166,8 @@ function Game_Load()
             this.color(gColorPalette[3]);
 
             this.bind("EnterFrame",function(e){ this.update(); });
+
+            return this;
         },
         update: function() {
             var currentSize = this.w;
@@ -173,6 +175,39 @@ function Game_Load()
                 this.attr({w: currentSize - this._decay, h: currentSize - this._decay});
             } else {
                 this.destroy();
+            }
+        }
+    });
+
+    Crafty.c("Explosion", {
+        _center: null,
+        _debrisVectors: [normalize2d([-1, -1]),
+                         normalize2d([1, -1]),
+                         normalize2d([-1, 1]),
+                         normalize2d([1, 1]),
+                         normalize2d([-1, 0]),
+                         normalize2d([0, 1]),
+                         normalize2d([1, 0]),
+                         normalize2d([0, -1])
+        ],
+        _debris: null,
+        init: function() {
+            this.addComponent('2D, Canvas');
+        },
+        createExplosion: function(center, size) {
+            this._center = center;
+            this._debris = [];
+            this._size = size;
+            for(var i in this._debrisVectors) {
+                this._debris.push(Crafty.e('Particle').createParticle(center, [size, size], 0.2));
+            }
+            this.bind("EnterFrame", function(e){ this.update(); });
+        },
+        update: function() {
+            for(var i in this._debris) {
+                var pos = [this._debris[i].x, this._debris[i].y];
+                pos = add2d(pos, scale2d(this._debrisVectors[i], this._size/10));
+                this._debris[i].attr({x:pos[0], y:pos[1]});
             }
         }
     });
@@ -199,6 +234,7 @@ function Game_Load()
             this.collision();
             this.onHit('Ground', function() {
                 console.log('collision!');
+                Crafty.e('Explosion').createExplosion(this._pos, 10);
                 this.destroy();
             });
 
