@@ -7,9 +7,13 @@ var gColorPalette = ['#EFFFDE', '#ADD794', '#529273', '#183442'];
 
 /*** Friendly Geometry ***/
 
+// Unit component-sprite sizes
+var gSpriteWidth = 8;
+var gSpriteHeight = 8;
+
 var gFriendlyUnit0 = {
     price: 10,
-    stats: {minRange:10, accuracy:0.4, fireRate:0.5},
+    stats: {speed: 1, minRange:10, accuracy:0.4, fireRate:0.5},
     size: {width:2, height:4},
     geo: [
         [1,0],
@@ -21,12 +25,13 @@ var gFriendlyUnit0 = {
 
 var gFriendlyUnit1 = {
     price: 80,
-    stats: {minRange:80, accuracy:0.1, fireRate:0.2},
-    size: {width:5, height:3},
+    stats: {speed: 0.25, minRange:80, accuracy:0.1, fireRate:0.2},
+    size: {width:5, height:4},
     geo: [
-        [0,1,0,0,0],
-        [1,1,1,1,0],
-        [1,1,0,1,1],
+        [0,0,0,0,1],
+        [0,1,1,1,0],
+        [1,1,1,1,1],
+        [2,2,0,2,2],
     ]
 };
 
@@ -59,18 +64,27 @@ function Game_Load()
            5.0 * Math.cos( offset + 100.0 * Math.random() );
         gWorldPolygon.push([x, y]);
     }
-
+    
     // Define how we are drawn...
     Crafty.c("GameUnit", {
-        _unit: {},
-        _pos: [0, 0],
-
+        
+        init: function(){
+            // Register for future updates
+            this.bind("EnterFrame",function(e){
+                this.moveTo( this._pos[0] + this._unit.stats.speed );
+            });
+        },
+        
         initialize: function(unit, pos){
+            // Type init            
+            this._unit = {};
+            this._pos = [0, 0];
+            this._sprites = [];
             this._pos = pos;
-
+            
             // Deep copy unit
             this._unit.price = unit.price;
-            this._unit.stats = {minRange:unit.stats.minRange, accuracy:unit.stats.accuracy, fireRate:unit.stats.fireRate};
+            this._unit.stats = {speed:unit.stats.speed, minRange:unit.stats.minRange, accuracy:unit.stats.accuracy, fireRate:unit.stats.fireRate};
             this._unit.size = {width:unit.size.width, height:unit.size.height};
             this._unit.geo = unit.geo;
 
@@ -80,23 +94,87 @@ function Game_Load()
 
             // Generate all relavent sprites
             for(var y = 0; y < this._unit.size.height; y++)
+            {
+                this._sprites.push( new Array(this._unit.size.width) );
+                for(var x = 0; x < this._unit.size.width; x++)
+                {
+                    // Retained for future movement
+                    var colorIndex = this._unit.geo[y][x];
+                    if( colorIndex == 0 )
+                        continue;
+                    this._sprites[y][x] = Crafty.e("2D, Canvas, Color").color( gColorPalette[colorIndex] ).attr({x: pos[0] + x * gSpriteWidth, y: pos[1] + y * gSpriteHeight, w: gSpriteWidth, h: gSpriteHeight});
+                }
+            }
+        },
+        
+        moveTo: function(px) {
+            // Save this as an update
+            this._pos[0] = px;
+            
+            // Which edge are we on?
+            var edgeIndex = -1;
+            for(var i = 0; i < gWorldPolygon.length - 1; i++)
+            {
+                if( this._pos[0] > gWorldPolygon[i][0] )
+                    edgeIndex = i;
+            }
+            
+            // Ignore if out of bounds
+            if( edgeIndex < 0 )
+                return;
+            
+            // Compute intersection point
+            var pt0 = gWorldPolygon[edgeIndex + 0];
+            var pt1 = gWorldPolygon[edgeIndex + 1];
+            var delta = (pt1[1] - pt0[1]) / (pt1[0] - pt0[0]);
+            var b = pt0[1] - delta * pt0[0];
+            
+            // Update root position
+            var pos = [this._pos[0], delta * this._pos[0] + b];
+            pos[1] -= this._unit.size.height * gSpriteHeight;
+            this._pos = pos;
+            
+            // Generate all relavent sprites
+            for(var y = 0; y < this._unit.size.height; y++)
             for(var x = 0; x < this._unit.size.width; x++)
             {
+                // Retained for future movement
                 var colorIndex = this._unit.geo[y][x];
-                Crafty.e("2D, Canvas, Color").color( gColorPalette[colorIndex] ).attr({x: pos[0] + x * spriteWidth, y: pos[1] + y * spriteHeight, w: spriteWidth, h: spriteHeight});
+                if( colorIndex == 0 )
+                    continue;
+                var deltaX = x * gSpriteWidth;
+                this._sprites[y][x].attr({x: pos[0] + x * gSpriteWidth, y: pos[1] + y * gSpriteHeight + deltaX * delta, w: gSpriteWidth, h: gSpriteHeight});
             }
-
-            // Register for future updates
-            this.bind("EnterFrame",function(){
-                this.draw();
-            })
-        },
-
-        draw: function(){
-
         }
     });
-
+    
+    // Scenery geometry
+    Crafty.c("Scenery", {
+        
+        initialize: function(scenery, pos){
+        
+            // Self init
+            this._sprites = [];
+            this._size = {width: scenery.size.width, height: scenery.size.height};
+            this._spriteSize = {width: scenery.spriteSize.width, height: scenery.spriteSize.height};
+            this._pos = pos;
+            
+            // Generate all relavent sprites
+            for(var y = 0; y < this._size.height; y++)
+            {
+                this._sprites.push( new Array(this._size.width) );
+                for(var x = 0; x < this._size.width; x++)
+                {
+                    // Retained for future movement
+                    var colorIndex = scenery.geo[y][x];
+                    if( colorIndex == 0 )
+                        continue;
+                    this._sprites[y][x] = Crafty.e("2D, Canvas, Color").color( gColorPalette[colorIndex] ).attr({x: pos[0] + x * this._spriteSize.width, y: pos[1] + y * this._spriteSize.height, w: this._spriteSize.width, h: this._spriteSize.height});
+                }
+            }
+        }
+    });
+    
     var gAccel = [0, 10];
     Crafty.c("SampleProjectile", {
         _pos: null,
@@ -118,8 +196,9 @@ function Game_Load()
 
             this.collision();
             this.onHit('Ground', function() {
-                console.log('got here');
-                debugger;
+                console.log('collision!');
+                this.destroy();
+
             });
 
             return this;
@@ -178,14 +257,13 @@ function Game_Load()
                 {
                     // No need to retain (draw left and right)
                     var spriteHeight = (y == 2) ? 100.0: stepHeight;
-                    Crafty.e("2D, Canvas, Color").color( gColorPalette[y + 1] ).attr({x: pt[0] - leftLength, y: pt[1] + y * stepHeight + leftHeight, w: leftLength, h: spriteHeight});
-                    Crafty.e("2D, Canvas, Color").color( gColorPalette[y + 1] ).attr({x: pt[0], y: pt[1] + y * stepHeight + rightHeight, w: rightLength, h: spriteHeight});
+                    Crafty.e("2D, Canvas, Color, Ground").color( gColorPalette[y + 1] ).attr({x: pt[0] - leftLength, y: pt[1] + y * stepHeight + leftHeight, w: leftLength, h: spriteHeight});
+                    Crafty.e("2D, Canvas, Color, Ground").color( gColorPalette[y + 1] ).attr({x: pt[0], y: pt[1] + y * stepHeight + rightHeight, w: rightLength, h: spriteHeight});
 
                     // Debugging:
                     //Crafty.e("2D, Canvas, Color").color("red").attr({x: pt[0], y: pt[1], w: 4, h: 4});
                 }
             }
-            Crafty.e("2D, Collision").collision(this.points, [0, gWindowHeight], [gWindowWidth, gWindowHeight] );
 
             // Register for callback
             this.bind("EnterFrame",function(){
@@ -201,7 +279,6 @@ function Game_Load()
                 Crafty.viewport.scroll('_x', Crafty.viewport.x + moveSpeed);
             if( this.gKeyState['RIGHT_ARROW'] != undefined && this.gKeyState['RIGHT_ARROW'] == true )
                 Crafty.viewport.scroll('_x', Crafty.viewport.x - moveSpeed);
-
         }
     });
 
@@ -230,11 +307,17 @@ var gProjectile = null;
 
 function GameScene_Init()
 {
-    // Allocate background
+    // Allocate background and both HQs
+    Crafty.e('Scenery').initialize(sceneryHQ0, [50, 225]);
+    Crafty.e('Scenery').initialize(sceneryHQ1, [1000, 250]);
     GameScene_GameBackground = Crafty.e('GameBackground').initialize(gWorldPolygon);
-
+    
     // Create a single game unit for fun...
     Crafty.e('GameUnit').initialize(gFriendlyUnit1, [20, 50]);
+    Crafty.e('GameUnit').initialize(gFriendlyUnit0, [50, 80]);
+    Crafty.e('GameUnit').initialize(gFriendlyUnit0, [40, 80]);
+    Crafty.e('GameUnit').initialize(gFriendlyUnit0, [30, 80]);
+    
     gProjectile = Crafty.e('SampleProjectile').createProjectile([100, 100], [100, 0], true);
 }
 
