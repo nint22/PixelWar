@@ -25,7 +25,7 @@ var gFriendlyUnit0 = {
 
 var gFriendlyUnit1 = {
     price: 80,
-    stats: {speed: 1.3, minRange:80, accuracy:0.1, fireRate:0.2},
+    stats: {speed: 0.25, minRange:80, accuracy:0.1, fireRate:0.2},
     size: {width:5, height:4},
     geo: [
         [0,0,0,0,1],
@@ -64,12 +64,9 @@ function Game_Load()
            5.0 * Math.cos( offset + 100.0 * Math.random() );
         gWorldPolygon.push([x, y]);
     }
-
+    
     // Define how we are drawn...
     Crafty.c("GameUnit", {
-        _unit: {},
-        _pos: [0, 0],
-        _sprites: [],
         
         init: function(){
             // Register for future updates
@@ -79,6 +76,10 @@ function Game_Load()
         },
         
         initialize: function(unit, pos){
+            // Type init            
+            this._unit = {};
+            this._pos = [0, 0];
+            this._sprites = [];
             this._pos = pos;
             
             // Deep copy unit
@@ -146,7 +147,34 @@ function Game_Load()
             }
         }
     });
-
+    
+    // Scenery geometry
+    Crafty.c("Scenery", {
+        
+        initialize: function(scenery, pos){
+        
+            // Self init
+            this._sprites = [];
+            this._size = {width: scenery.size.width, height: scenery.size.height};
+            this._spriteSize = {width: scenery.spriteSize.width, height: scenery.spriteSize.height};
+            this._pos = pos;
+            
+            // Generate all relavent sprites
+            for(var y = 0; y < this._size.height; y++)
+            {
+                this._sprites.push( new Array(this._size.width) );
+                for(var x = 0; x < this._size.width; x++)
+                {
+                    // Retained for future movement
+                    var colorIndex = scenery.geo[y][x];
+                    if( colorIndex == 0 )
+                        continue;
+                    this._sprites[y][x] = Crafty.e("2D, Canvas, Color").color( gColorPalette[colorIndex] ).attr({x: pos[0] + x * this._spriteSize.width, y: pos[1] + y * this._spriteSize.height, w: this._spriteSize.width, h: this._spriteSize.height});
+                }
+            }
+        }
+    });
+    
     var gAccel = [0, 10];
     Crafty.c("SampleProjectile", {
         _mass: 100,
@@ -243,7 +271,6 @@ function Game_Load()
                 Crafty.viewport.scroll('_x', Crafty.viewport.x + moveSpeed);
             if( this.gKeyState['RIGHT_ARROW'] != undefined && this.gKeyState['RIGHT_ARROW'] == true )
                 Crafty.viewport.scroll('_x', Crafty.viewport.x - moveSpeed);
-
         }
     });
 
@@ -272,11 +299,17 @@ var gProjectile = null;
 
 function GameScene_Init()
 {
-    // Allocate background
+    // Allocate background and both HQs
+    Crafty.e('Scenery').initialize(sceneryHQ0, [50, 225]);
+    Crafty.e('Scenery').initialize(sceneryHQ1, [1000, 250]);
     GameScene_GameBackground = Crafty.e('GameBackground').initialize(gWorldPolygon);
-
+    
     // Create a single game unit for fun...
-    Crafty.e('GameUnit').initialize(gFriendlyUnit0, [20, 50]);
+    Crafty.e('GameUnit').initialize(gFriendlyUnit1, [20, 50]);
+    Crafty.e('GameUnit').initialize(gFriendlyUnit0, [50, 80]);
+    Crafty.e('GameUnit').initialize(gFriendlyUnit0, [40, 80]);
+    Crafty.e('GameUnit').initialize(gFriendlyUnit0, [30, 80]);
+    
     gProjectile = Crafty.e('SampleProjectile').initialize([100, 100], [100, 0], false);
 }
 
