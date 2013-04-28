@@ -10,7 +10,7 @@ var gColorPalette = ['#EFFFDE', '#ADD794', '#529273', '#183442'];
 var gButtonWidth = 64;
 var gButtonHeight = 64;
 var gButtonCount = 4;
-var gButtonTexts = ["+ Marine", "+ Mech", "+ Tank", "+ Gunship"];
+var gButtonTexts = ["Marine $10", "Mech $30", "Tank $80", "Gunship $200"];
 
 /*** World Geometry ***/
 
@@ -334,16 +334,26 @@ function GameScene_InitUI()
         var px = (gWindowWidth / gButtonCount) * i + (gWindowWidth / gButtonCount) / 2 - gButtonWidth / 2;
         var py = gWindowHeight - gButtonHeight - 8;
         
+        // Button
         Crafty.e("2D, Canvas, Color, Mouse")
         .color(gColorPalette[1])
-        .attr({ x: px, y: py, w: gButtonWidth, h: gButtonHeight, parent: Crafty.viewport })
+        .attr({ x: px, y: py, w: gButtonWidth, h: gButtonHeight, px: px })
         .bind('MouseOver', function() { this.color(gColorPalette[2]) })
         .bind('MouseOut', function() { this.color(gColorPalette[1]) })
         .areaMap([0,0], [gButtonWidth,0], [gButtonWidth,gButtonHeight], [0,gButtonHeight])
         .bind('EnterFrame', function() {
-            var px = (gWindowWidth / gButtonCount) * i + (gWindowWidth / gButtonCount) / 2 - gButtonWidth / 2;
-            this.x = -Crafty.viewport.x;
-        } );
+            this.x = -Crafty.viewport.x + this.px;
+        });
+        
+        // Text
+        Crafty.e("2D, DOM, Text")
+        .attr({ x: px, y: py + gButtonHeight * 0.25, w: gButtonWidth, h: gButtonHeight * 0.5, px: px })
+        .text(gButtonTexts[i])
+        .textFont({ type: 'italic', family: 'Arial' })
+        .textColor(gColorPalette[3])
+        .bind('EnterFrame', function() {
+            this.x = -Crafty.viewport.x + this.px;
+        });
     }
 }
 
