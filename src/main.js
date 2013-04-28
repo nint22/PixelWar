@@ -175,6 +175,31 @@ function Game_Load()
         }
     });
     
+    Crafty.c("Particle", {
+        _decay: 1,
+        init: function() {
+            this.addComponent("2D, Canvas, Color");
+        },
+        createParticle: function(pos, size, decay) {
+            this._decay = decay || this._decay;
+            this.attr({x:pos[0],
+                       y:pos[1],
+                       w:size[0],
+                       h:size[1]});
+            this.color(gColorPalette[3]);
+
+            this.bind("EnterFrame",function(e){ this.update(); });
+        },
+        update: function() {
+            var currentSize = this.w;
+            if(currentSize > 0) {
+                this.attr({w: currentSize-1, h: currentSize-1});
+            } else {
+                this.destroy();
+            }
+        }
+    });
+
     var gAccel = [0, 10];
     Crafty.c("SampleProjectile", {
         _pos: null,
@@ -198,7 +223,6 @@ function Game_Load()
             this.onHit('Ground', function() {
                 console.log('collision!');
                 this.destroy();
-
             });
 
             return this;
@@ -208,6 +232,7 @@ function Game_Load()
             if(this._physics) {
                 this._vel = add2d(this._vel, scale2d(gAccel, dt));
             }
+            Crafty.e('Particle').createParticle(this._pos, [5, 5], 0.2);
             this.attr({x:this._pos[0], y:this._pos[1]});
         },
     });
