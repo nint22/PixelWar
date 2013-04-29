@@ -4,7 +4,7 @@
 var gWindowWidth = 1000;
 var gWindowHeight = 500;
 
-var gColorPalette = ['#EFFFDE', '#ADD794', '#529273', '#183442'];
+var gColorPalette = ['#EFFFDE', '#ADD794', '#529273', '#183442', '#FF9999', '#FF6666', '#FF2222', '#CC0000'];
 var gDeltaCount = 30;
 
 // Time ellapsed over the last frame
@@ -21,6 +21,8 @@ var gButtonTexts = ["Marine $10", "Mech $30", "Tank $80", "Gunship $200"];
 
 // Programatically generated
 var gWorldPolygon = []; //[[0, 350], [10, 400], [50, 410], [100, 405], [200, 380], [250, 395], [250, 350]];
+var gPlayerUnitPositions = new Array(3500); /* units mark their presence by setting gPlayUnitPosition[unit.pos] = 1*/
+var gEnemyUnitPositions = new Array(3500);
 
 /*** Player Properties ***/
 
@@ -56,19 +58,61 @@ function Game_Load()
             // Register for future updates
             this.bind("EnterFrame",function(e){
             
+                // Blank this unit's old position from the list of unit positions
+                if (this._unit.stats.speed > 0) {
+                    gPlayerUnitPositions[Math.floor(this._pos[0])] = false;
+                }
+                else {
+                    gEnemyUnitPositions[Math.floor(this._pos[0])] = false;
+                }
+
                 // Move forward over time
-                this.moveTo( this._pos[0] + this._unit.stats.speed );
+                if (this.enemyIsEverywhere() == false) {
+                    this.moveTo(this._pos[0] + this._unit.stats.speed);
+                }
+
+                // Set unit's new position in the list of unit positions
+                if (this._unit.stats.speed > 0) {
+                    gPlayerUnitPositions[Math.floor(this._pos[0])] = true;
+                }
+                else {
+                    gEnemyUnitPositions[Math.floor(this._pos[0])] = true;
+                }
                 
                 // Attempt to fire if possible
                 this._weaponReload += gFrameTime;
-                if( this._weaponReload > this._unit.stats.speed )
+                if ((this._weaponReload > Math.abs(this._unit.stats.speed)) && (this.enemyIsEverywhere() == true))
                 {
                     this._weaponReload = 0.0;
-                    Crafty.e('SampleProjectile').createProjectile(this._pos, [100, -20], true);
+                    var direction = (Math.abs(this._unit.stats.speed)/this._unit.stats.speed);
+                    Crafty.e('SampleProjectile').createProjectile(this._pos, [direction * 100, -20], true);
                 }
             });
         },
         
+        enemyIsEverywhere: function() { /* The mass effect 1 understanding of enemy presence */
+            var direction = (Math.abs(this._unit.stats.speed)/this._unit.stats.speed);
+            var goodGuy = true;
+            if (direction == -1) goodGuy = false;
+
+            if (goodGuy == true) {
+                for(var i = Math.floor(this._pos[0]); i < (Math.floor(this._pos[0]) + (this._unit.stats.minRange * gSpriteWidth)); i++) {
+                    if (gEnemyUnitPositions[i] == true) {
+                        return true;
+                    }
+                }
+            } 
+            else {
+                for(var i = Math.floor(this._pos[0]); i > (Math.floor(this._pos[0]) - (this._unit.stats.minRange * gSpriteWidth)); i--) {
+                    if (gPlayerUnitPositions[i] == true) {
+                        return true;
+                    }
+                }
+            } 
+
+            return false;
+        },
+
         initialize: function(unit, pos){
             // Type init            
             this._unit = {};
@@ -437,6 +481,32 @@ function GameScene_InitUI()
             this.x = -Crafty.viewport.x + this.px;
         });
     }
+
+    var px = (gWindowWidth / gButtonCount) * 0.5 + (gWindowWidth / gButtonCount) / 2 - gButtonWidth / 2;
+    var py = gWindowHeight - gButtonHeight - 8;
+
+    /*
+    // Make me an enemy Button, DEBUG
+    Crafty.e("2D, Canvas, Color, Mouse")
+    .color(gColorPalette[5])
+    .attr({ x: px, y: py, w: gButtonWidth, h: gButtonHeight, px: px, unitIndex: 0})
+    .bind('MouseOver', function() { this.color(gColorPalette[7]) })
+    .bind('MouseOut', function() { this.color(gColorPalette[6]) })
+    .bind('Click', function() { Crafty.e('GameUnit').initialize(gEnemyUnits[0], [2770, 255]); })
+    .areaMap([0,0], [gButtonWidth,0], [gButtonWidth,gButtonHeight], [0,gButtonHeight])
+    .bind('EnterFrame', function() {
+        this.x = -Crafty.viewport.x + this.px;
+    });
+    
+    // Text
+    Crafty.e("2D, DOM, Text")
+    .attr({ x: px, y: py + gButtonHeight * 0.10, w: gButtonWidth, h: gButtonHeight * 0.5, px: px })
+    .text("Make me an enemy")
+    .textFont({ type: 'italic', family: 'Arial' })
+    .textColor(gColorPalette[7])
+    .bind('EnterFrame', function() {
+        this.x = -Crafty.viewport.x + this.px;
+    }); END DEBUG*/
     
     // Draw cash flow and unit counts
     Crafty.e("2D, Canvas, Color")
